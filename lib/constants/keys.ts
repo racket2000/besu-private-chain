@@ -9,4 +9,6 @@ export const PUBLIC_KEYS_BASE64 = [
     "MFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAE83LdjlQXxF3Z8IAXuT2hzsJvGYDXrb3emf/vDUw7+VT9FYCNYzyPfgC5ia+yKkQnFe8XyCF0XtbJmP/VU+8S/g==",
     // SAMPLE KEY 2 - Replace with your own generated public key.
     "MFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAEYSoXBzM+HxoNoeYw65a6J3mxxDYPhsxchWUdtRYEXeh/X/3RgPAjvefbh4tXUMXRPcyeiBTlXDWmcHsAk5Q/DA==",
+    // SAMPLE KEY 3 - Replace witj your own generated public key.
+    "MFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAEWV3/32QcTIQKqGQ/HNIw4ilS1TDPuiUq4qcpfVFQCbGVSFeg/5v24yxylHiAcBJAMx+atqb40NPJooiDV1wRTg==",
 ];
