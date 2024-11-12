@@ -35,8 +35,8 @@ Before deployment, make sure to install needed dependencies and configure your s
 ### Clone this repository and install dependencies
 
 ```bash
-   git clone https://github.com/aws-samples/aws-blockchain-node-runners.git
-   cd aws-blockchain-node-runners/lib/besu-private-chain
+   git clone https://github.com/aws-samples/besu-private-chain.git
+   cd besu-private-chain
    npm install
 ```
 
@@ -45,7 +45,7 @@ Before deployment, make sure to install needed dependencies and configure your s
 
 First, create your own copy of `.env` file and edit it:
 ```bash
-   # Make sure you are in aws-blockchain-node-runners/lib/besu-private-chain
+   # Make sure you are at the root of your besu-private-chain directory
    pwd
    cp ./.env-sample .env
 ```
