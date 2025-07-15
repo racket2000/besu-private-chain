@@ -18,7 +18,7 @@ const BesuAlarmThresholds = {
   GAS_UTILIZATION_THRESHOLD: 60,
   BLOCK_RATE_SLOWDOWN_THRESHOLD: 10,
   BLOCKCHAIN_HALT_THRESHOLD: 0,
-  MIN_VALIDATOR_PEER_COUNT_THRESHOLD: 5,
+  MIN_VALIDATOR_PEER_COUNT_THRESHOLD: 3,
   VALIDATOR_LAG_THRESHOLD: 1000,
   TRANSACTION_POOL_SIZE_THRESHOLD: CLIENT_CONFIG.MAX_SIZE_OF_TX_POOL * 0.15,
 };
@@ -95,20 +95,6 @@ export class BesuMonitoring extends Construct {
       actionOverride: alarmAction,
     });
 
-    //Alarm will fire if the avg transaction pool across the shard grows beyond 15000 transactions for 5 mins.
-    alarmFactory.addAlarm(this.getAvgTransactionPoolSizeMetric(clusterName), {
-      alarmDescription:
-        'Alarm indicates that the avg transaction pool size across the cluster has grown beyond the allowed limit.',
-      alarmNameSuffix: 'validatorTransactionPoolSizeAlarm',
-      comparisonOperator: ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
-      datapointsToAlarm: 5,
-      evaluationPeriods: 5,
-      threshold: BesuAlarmThresholds.TRANSACTION_POOL_SIZE_THRESHOLD,
-      treatMissingData: TreatMissingData.BREACHING,
-      actionsEnabled: isAlarmActionEnabled,
-      disambiguator: Disambiguator.CRUCIAL,
-    });
-
     //Alarm will fire if the gas utilization in the top block increases beyond 60% for 5 mins.
     alarmFactory.addAlarm(this.getGasUtilizationInTopBlock(clusterName), {
       alarmDescription: 'Alarm indicates that the gas utilization in the top block is high',
@@ -178,19 +164,14 @@ export class BesuMonitoring extends Construct {
           important: true,
         },
         {
-          title: 'BesuMaxTransactionPoolSize',
+          title: 'BesuTxPerBlock',
           metrics: [
-            this.getMaxTransactionPoolSizeMetric(clusterName),
-            this.getAvgTransactionPoolSizeMetric(clusterName),
-          ],
-          horizontalAnnotations: [
-            {
-              value: BesuAlarmThresholds.TRANSACTION_POOL_SIZE_THRESHOLD,
-              label: 'TransactionPoolSizeAlarmThreshold',
-            },
+            this.getMaxTxPerBlock(clusterName),
+            this.getAvgTxPerBlock(clusterName),
           ],
           important: true,
         },
+
         {
           title: 'BesuGasUsedInTopBlock',
           metrics: [this.getMaxGasUsedInTopBlockMetric(clusterName), this.getMaxGasLimitPerBlockMetric(clusterName)],
@@ -318,13 +299,13 @@ export class BesuMonitoring extends Construct {
     });
   }
 
-  private getMaxTransactionPoolSizeMetric(clusterName: string): Metric {
+  private getMaxTxPerBlock(clusterName: string): Metric {
     return new Metric({
-      metricName: 'transactions',
+      metricName: 'chain_head_transaction_count',
       statistic: MetricStatistic.MAX as string,
-      label: 'max_transaction_pool_size',
+      label: 'max_transactions_per_block',
       dimensionsMap: {
-        OTelLib: 'transaction_pool',
+        OTelLib: 'blockchain',
         clusterName: clusterName,
       },
       namespace: PrivateChainMetricsNameSpace,
@@ -360,13 +341,13 @@ export class BesuMonitoring extends Construct {
     });
   }
 
-  private getAvgTransactionPoolSizeMetric(clusterName: string): Metric {
+  private getAvgTxPerBlock(clusterName: string): Metric {
     return new Metric({
-      metricName: 'transactions',
+      metricName: 'chain_head_transaction_count',
       statistic: MetricStatistic.AVERAGE as string,
-      label: 'avg_transaction_pool_size',
+      label: 'avg_transactions_per_block',
       dimensionsMap: {
-        OTelLib: 'transaction_pool',
+        OTelLib: 'blockchain',
         clusterName: clusterName,
       },
       namespace: PrivateChainMetricsNameSpace,

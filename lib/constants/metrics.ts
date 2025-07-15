@@ -31,6 +31,8 @@ export function getOtelConfig(clusterName: string) {
     '      include:\n' +
     '        match_type: strict\n' +
     '        metric_names:\n' +
+    '          - transactions_added_total\n' +
+    '          - transactions_removed_total\n' +
     '          - chain_head_gas_limit\n' +
     '          - chain_head_gas_used\n' +
     '          - chain_head_timestamp\n' +

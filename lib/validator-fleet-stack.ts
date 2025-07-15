@@ -85,6 +85,10 @@ import { NagSuppressions } from 'cdk-nag';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as path from 'path';
 import { HostedZone } from 'aws-cdk-lib/aws-route53';
+import { MonitoringFacade } from 'cdk-monitoring-constructs';
+import { BesuMonitoring } from './constructs/besu-monitoring';
+import { BlockchainNodeDiskMonitoring } from './constructs/blockchain-node-disk-monitoring';
+import { PrivateChainMetricsNameSpace } from './constants/metrics';
 
 export interface ValidatorFleetInfrastructureProps extends StackProps {
   readonly stage: string;
@@ -176,10 +180,34 @@ export class ValidatorFleetInfrastructure extends Stack {
     this.createValidatorDNS();
 
     this.createECSCluster(props.imageProviderAccount);
+
     this.createASGInstanceLaunchHook(stackAccount);
     this.createASGInstanceTerminationHook(stackAccount);
     this.createASG();
     this.createVPCEndpointService(props.allowedPrincipals);
+
+    // -------------------- Monitoring --------------------
+    const monitoring = new MonitoringFacade(this, 'BesuPrivateChain');
+
+    new BesuMonitoring(this, 'BesuMon', {
+      monitoringFacade: monitoring,
+      stage: this.stage,
+      alarmNamePrefix: `${this.stage}-besu`,
+      region: this.region,
+      clusterName: this.ecsCluster.clusterName,
+    });
+
+    new BlockchainNodeDiskMonitoring(this, 'DiskMon', {
+      monitoringFacade: monitoring,
+      stage: this.stage,
+      alarmNamePrefix: `${this.stage}-disk`,
+      region: this.region,
+      blockchainASGName: this.validatorASG.asg.autoScalingGroupName,
+      diskMetricsNamespace: PrivateChainMetricsNameSpace,
+      blockchainNodeDisks: [
+        { diskName: 'root', diskMountPoint: '/' },
+      ],
+    });
     NagSuppressions.addStackSuppressions(this, [
       {
         id: 'AwsSolutions-SMG4',
@@ -633,6 +661,8 @@ export class ValidatorFleetInfrastructure extends Stack {
       acceptanceRequired: false,
       allowedPrincipals: allowedPrincipals,
     });
+
+
 
     // TODO : Integrate configurable DNS.
     /*

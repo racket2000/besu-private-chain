@@ -181,13 +181,14 @@ export class CommonInfrastructure extends Stack {
     this.vpcEndpointSecurityGroup = this.createVPCEndPointSecurityGroup();
 
     const interfaceVpcEndpointAwsServices = [
-      InterfaceVpcEndpointAwsService.CLOUDWATCH,
+      InterfaceVpcEndpointAwsService.CLOUDWATCH_MONITORING,
       InterfaceVpcEndpointAwsService.CLOUDWATCH_LOGS,
       InterfaceVpcEndpointAwsService.ECS,
       InterfaceVpcEndpointAwsService.ECS_AGENT,
       InterfaceVpcEndpointAwsService.ECS_TELEMETRY,
       InterfaceVpcEndpointAwsService.ECR_DOCKER,
       InterfaceVpcEndpointAwsService.ECR,
+      InterfaceVpcEndpointAwsService.EC2,
       InterfaceVpcEndpointAwsService.EC2_MESSAGES,
       InterfaceVpcEndpointAwsService.KMS,
       InterfaceVpcEndpointAwsService.SECRETS_MANAGER,
