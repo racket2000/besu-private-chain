@@ -12,10 +12,11 @@ This blueprint deploys a ready to use private blockchain network as a service ac
 2. [Setup / Configuration](#configuration)
 3. [Deployment](#build-and-deploy)
 4. [Querying the Private Besu Network](#querying-the-private-besu-network)
-5. [Sample RPC request](#example-request-using-curl)
-6. [Troubleshooting](#troubleshooting)
-7. [Updating & Redeploying](#redeploying-and-softwarehardware-updates)
-8. [Clean up](#clean-up)
+5. [Cross-Account Validator Connectivity](#cross-account-validator-connectivity)
+6. [Sample RPC request](#example-request-using-curl)
+7. [Troubleshooting](#troubleshooting)
+8. [Updating & Redeploying](#redeploying-and-softwarehardware-updates)
+9. [Clean up](#clean-up)
 
 
 ## Architecture Overview
@@ -51,7 +52,15 @@ First, create your own copy of `.env` file and edit it:
 ```
 
 The only required field to edit is your AWS account. The rest are populated with known working defaults.
-For technical users, more detailed configurations are available in `lib/constants`, and `lib/genesis`. 
+For technical users, more detailed configurations are available in `lib/constants`, and `lib/genesis`.
+
+If you plan to connect validators across different AWS accounts, populate the
+`CROSS_ACCOUNT_PEERS` variable in `.env` with a comma separated list of peer
+`enode` addresses. These peers will be appended to the generated static nodes
+file during deployment. Optionally, you can also set
+`CROSS_ACCOUNT_P2P_SERVICES` with a comma separated list of PrivateLink service
+names. When specified, the stack automatically creates Interface VPC endpoints
+to those services for cross-account P2P traffic.
 
 After you modify `.env`, make sure you run the following commmand to import the variables into your shell session:
 
@@ -191,6 +200,31 @@ After creating the VPC endpoint, ensure your security group settings allow traff
 Take note of the endpoint's DNS name, which typically follows the format `*.vpce.amazonaws.com`. This DNS name will serve as the URL for your RPC requests, whether you're using libraries or curl commands to interact with your private blockchain. 
 
 By using this endpoint, you maintain the security of your Besu network while enabling authorized access from within your VPC.
+
+## Cross-Account Validator Connectivity
+
+This blueprint can run validator nodes across multiple AWS accounts. PrivateLink is used so peer-to-peer (P2P) traffic remains on the AWS network.
+
+### Steps for the network creator (Account A)
+
+1. Deploy the validator fleet stack normally.
+2. In the AWS console, navigate to **VPC > Endpoint services** and locate the service named `P2PVPCEndpointService`.
+3. Share the service with the invited AWS account. This can be done with the CLI:
+
+   ```bash
+   aws ec2 modify-vpc-endpoint-service-permissions \
+       --service-id <service-id> \
+       --add-allowed-principals arn:aws:iam::<INVITED_ACCOUNT_ID>:root
+   ```
+
+4. Provide the service name and your validators' `enode` addresses to the invited organization.
+
+### Steps for the invited organization (Account B)
+
+1. Add the `enode` addresses from Account A to the `CROSS_ACCOUNT_PEERS` variable in your `.env` file.
+2. Optionally set `CROSS_ACCOUNT_P2P_SERVICES` to the shared service name(s) from Account A to have the stack create Interface VPC endpoints automatically. Otherwise create the endpoint manually.
+3. Deploy this blueprint following the standard deployment steps.
+4. The stack will include the remote peers in the static node list, enabling cross-account communication.
 
 ## Example request using curl
 

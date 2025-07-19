@@ -25,6 +25,7 @@ export interface CommonInfrastructureProps extends StackProps {
   readonly shardId: string;
   readonly stage: string;
   readonly env: Environment;
+  readonly crossAccountP2pServices?: string[];
 }
 
 export class CommonInfrastructure extends Stack {
@@ -36,6 +37,7 @@ export class CommonInfrastructure extends Stack {
   private fleetConfigBucket: Bucket;
   private vpcEndpointSecurityGroup: ISecurityGroup;
   region: string;
+  private crossAccountP2pServices: string[];
 
   private privateChainCommonInfrastructureS3BucketKey: Key;
 
@@ -44,6 +46,7 @@ export class CommonInfrastructure extends Stack {
     this.stage = props.stage;
     this.region = props.env.region ?? 'us-east-1';
     this.shardId = props.shardId;
+    this.crossAccountP2pServices = props.crossAccountP2pServices ?? [];
     this.createVPCAndSG();
     this.createKeys();
     this.createS3Buckets(props.env.account ?? '');
@@ -208,6 +211,19 @@ export class CommonInfrastructure extends Stack {
         },
       });
     }
+
+    let idx = 0;
+    for (const serviceName of this.crossAccountP2pServices) {
+      this.fleetVpc.addInterfaceEndpoint(`CrossAcctP2PEndpoint${idx++}`, {
+        service: { name: serviceName, port: CLIENT_CONFIG.DISCOVERY_PORT },
+        privateDnsEnabled: false,
+        lookupSupportedAzs: false,
+        securityGroups: [this.vpcEndpointSecurityGroup],
+        subnets: {
+          subnetType: SubnetType.PRIVATE_ISOLATED,
+        },
+      });
+    }
   }
 
   private createVPCEndPointSecurityGroup(): ISecurityGroup {
@@ -219,6 +235,17 @@ export class CommonInfrastructure extends Stack {
       this.fleetSecurityGroup,
       Port.tcp(NETWORK_CONFIG.TLS_PORT),
       'All https traffic allowed from vals to vpc endpoints',
+    );
+
+    vpcEndpointSecurityGroup.addIngressRule(
+      this.fleetSecurityGroup,
+      Port.tcp(CLIENT_CONFIG.DISCOVERY_PORT),
+      'P2P tcp traffic from validators',
+    );
+    vpcEndpointSecurityGroup.addIngressRule(
+      this.fleetSecurityGroup,
+      Port.udp(CLIENT_CONFIG.DISCOVERY_PORT),
+      'P2P udp traffic from validators',
     );
 
     return vpcEndpointSecurityGroup;

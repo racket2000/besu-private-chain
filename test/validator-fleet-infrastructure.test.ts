@@ -16,6 +16,7 @@ describe('Validator Fleet Infrastructure Stack', () => {
         shardId: process.env.SHARD || '1',
         stage: 'dev',
         env: { account: process.env.AWS_ACCOUNT_ID, region: process.env.AWS_REGION },
+        crossAccountP2pServices: [],
     };
     const commonStack = new CommonInfrastructure(app, 'CommonInfrastructureStack', commonProps);
 

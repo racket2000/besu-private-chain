@@ -36,7 +36,7 @@ import {
   VpcEndpointService,
   Instance,
 } from 'aws-cdk-lib/aws-ec2';
-import { CfnListener, Protocol, Protocol as ELBProtocol, SslPolicy } from 'aws-cdk-lib/aws-elasticloadbalancingv2';
+import { CfnListener, NetworkLoadBalancer, Protocol, Protocol as ELBProtocol, SslPolicy } from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import { Rule } from 'aws-cdk-lib/aws-events';
 import { LambdaFunction } from 'aws-cdk-lib/aws-events-targets';
 import { Key } from 'aws-cdk-lib/aws-kms';
@@ -53,7 +53,7 @@ import {
   getValidatorHostName,
   ResourceName,
 } from './constants/resource-names';
-import { NETWORK_CONFIG } from './constants/network';
+import { NETWORK_CONFIG, CROSS_ACCOUNT_PEERS } from './constants/network';
 import { PUBLIC_KEYS_BASE64 } from './constants/keys';
 
 import { BootNodeArtifactGenerator } from './constructs/bootnode-artifact-generator';
@@ -310,6 +310,7 @@ export class ValidatorFleetInfrastructure extends Stack {
       shardId: this.shardId,
       configBucket: this.configBucket,
       validatorKeySet: this.ValidatorECCKeySet,
+      crossAccountPeers: CROSS_ACCOUNT_PEERS.map((p) => p.enode),
       version: process.env.FIRST_DEPLOY ? 0 : 1
     });
   }
@@ -662,10 +663,34 @@ export class ValidatorFleetInfrastructure extends Stack {
       allowedPrincipals: allowedPrincipals,
     });
 
+    const p2pLoadBalancer = new NetworkLoadBalancer(this, 'P2PLoadBalancer', {
+      vpc: this.vpc,
+      internetFacing: false,
+    });
+
+    const p2pListener = p2pLoadBalancer.addListener('P2PListener', {
+      port: CLIENT_CONFIG.DISCOVERY_PORT,
+      protocol: ELBProtocol.TCP,
+    });
+
+    p2pListener.addTargets('P2PTargets', {
+      port: CLIENT_CONFIG.DISCOVERY_PORT,
+      targets: [this.validatorASG.asg],
+      healthCheck: {
+        enabled: true,
+        protocol: ELBProtocol.TCP,
+      },
+    });
+
+    const p2pEndpointService = new VpcEndpointService(this, 'P2PVPCEndpointService', {
+      vpcEndpointServiceLoadBalancers: [p2pLoadBalancer],
+      acceptanceRequired: false,
+      allowedPrincipals: allowedPrincipals,
+    });
 
 
-    // TODO : Integrate configurable DNS.
-    /*
+
+    /* Integrate configurable DNS as needed.
     const vpcEndpointServicePrivateDNS = new VpcEndpointServiceDomainName(this, 'EndpointDomain', {
       endpointService: this.vpcEndpointService,
       domainName: this.serviceDomainName,
