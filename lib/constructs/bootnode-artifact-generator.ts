@@ -16,6 +16,7 @@ export interface BootNodeArtifactGeneratorProps {
   readonly shardId: string;
   readonly configBucket: Bucket;
   readonly validatorKeySet: ValidatorECCKeySet;
+  readonly crossAccountPeers?: string[];
   readonly version?: number;
 }
 
@@ -36,6 +37,7 @@ export class BootNodeArtifactGenerator extends Construct {
         environment: {
           CONFIG_BUCKET: props.configBucket.bucketName,
           SHARD_ID: props.shardId,
+          CROSS_ACCOUNT_PEERS: props.crossAccountPeers?.join(',') ?? '',
         },
         runtime: Runtime.NODEJS_LATEST,
       },

@@ -14,6 +14,7 @@ describe('Common Infrastructure Stack', () => {
         shardId: '3',
         stage: 'dev',
         env: { account: process.env.AWS_ACCOUNT_ID, region: process.env.AWS_REGION },
+        crossAccountP2pServices: [],
     };
 
     const stack = new CommonInfrastructure(app, 'CommonInfrastructureStack', props);

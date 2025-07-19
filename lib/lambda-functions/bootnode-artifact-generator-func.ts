@@ -23,7 +23,11 @@ export const handler: Handler = async (event, context) => {
       CLIENT_CONFIG.DISCOVERY_PORT.toString(),
     ),
   );
-  await uploadStringAsFile(fileName, JSON.stringify(enodes), process.env.CONFIG_BUCKET as string);
+  const crossAccountPeers = process.env.CROSS_ACCOUNT_PEERS
+    ? process.env.CROSS_ACCOUNT_PEERS.split(',').filter((p) => p)
+    : [];
+  const allEnodes = enodes.concat(crossAccountPeers);
+  await uploadStringAsFile(fileName, JSON.stringify(allEnodes), process.env.CONFIG_BUCKET as string);
   console.log('Successfully uploaded statis node file to s3');
 };
 
