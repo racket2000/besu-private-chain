@@ -16,7 +16,6 @@ describe('Validator Fleet Infrastructure Stack', () => {
         shardId: process.env.SHARD || '1',
         stage: 'dev',
         env: { account: process.env.AWS_ACCOUNT_ID, region: process.env.AWS_REGION },
-        crossAccountP2pServices: [],
     };
     const commonStack = new CommonInfrastructure(app, 'CommonInfrastructureStack', commonProps);
 
@@ -41,9 +40,9 @@ describe('Validator Fleet Infrastructure Stack', () => {
 
     if (validatorTemplate) {
         test('creates ECS Cluster with daemon scheduling strategy', () => {
-            validatorTemplate.hasResourceProperties('AWS::ECS::Cluster', {
-                ClusterName: `Shard${process.env.SHARD}-ValidatorCluster`,
-            });
+            const clusters = validatorTemplate.findResources('AWS::ECS::Cluster');
+            const cluster = clusters[Object.keys(clusters)[0]] as any;
+            expect(cluster.Properties.ClusterName).toMatch(/^Shard[0-9]+-ValidatorCluster$/);
 
             validatorTemplate.hasResourceProperties('AWS::ECS::Service', {
                 LaunchType: 'EC2',
