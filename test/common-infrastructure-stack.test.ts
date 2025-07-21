@@ -14,7 +14,6 @@ describe('Common Infrastructure Stack', () => {
         shardId: '3',
         stage: 'dev',
         env: { account: process.env.AWS_ACCOUNT_ID, region: process.env.AWS_REGION },
-        crossAccountP2pServices: [],
     };
 
     const stack = new CommonInfrastructure(app, 'CommonInfrastructureStack', props);
@@ -54,7 +53,7 @@ describe('Common Infrastructure Stack', () => {
 
     test('creates S3 bucket with encryption and lifecycle rule', () => {
         template.hasResourceProperties('AWS::S3::Bucket', {
-            BucketName: `privatechain-us-east-1-${props.env.account}-shard-3-config-bucket`,
+            BucketName: `privatechain-us-east-1-${props.env.account || ''}-shard-3-config-bucket`,
             BucketEncryption: {
                 ServerSideEncryptionConfiguration: [{ ServerSideEncryptionByDefault: { SSEAlgorithm: 'aws:kms' } }],
             }
@@ -64,6 +63,10 @@ describe('Common Infrastructure Stack', () => {
     test('exports FleetConfigBucketArn and S3BucketKeyArn', () => {
         template.hasOutput('S3BucketKeyArnOutput', {
             Export: { Name: 'S3BucketKeyArn' },
+        });
+
+        template.hasOutput('FleetVpcIdOutput', {
+            Export: { Name: 'FleetVpcId' },
         });
     });
 });

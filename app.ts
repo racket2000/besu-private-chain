@@ -7,7 +7,6 @@ import { ArnPrincipal } from 'aws-cdk-lib/aws-iam';
 
 import { CommonInfrastructure } from "./lib/common-infrastructure-stack";
 import { ValidatorFleetInfrastructure, ValidatorFleetInfrastructureProps } from "./lib/validator-fleet-stack";
-import { CROSS_ACCOUNT_P2P_SERVICE_NAMES } from './lib/constants/network';
 
 const app = new cdk.App();
 cdk.Tags.of(app).add("Project", "PrivateChain");
@@ -24,7 +23,6 @@ if (process.env.USER && process.env.AWS_ACCOUNT_ID) {
             shardId: '1',
             stage: 'dev',
             env: stackEnv,
-            crossAccountP2pServices: CROSS_ACCOUNT_P2P_SERVICE_NAMES,
         },
     );
     const devValidatorFleetInfraProps: ValidatorFleetInfrastructureProps = {
