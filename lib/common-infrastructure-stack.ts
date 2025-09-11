@@ -9,8 +9,11 @@ import {
   Peer,
   Port,
   SecurityGroup,
+  Subnet,
   SubnetType,
   Vpc,
+  CfnTransitGatewayAttachment,
+  CfnRoute,
 } from 'aws-cdk-lib/aws-ec2';
 import { Key } from 'aws-cdk-lib/aws-kms';
 
@@ -25,6 +28,7 @@ export interface CommonInfrastructureProps extends StackProps {
   readonly shardId: string;
   readonly stage: string;
   readonly env: Environment;
+  readonly transitGatewayId?: string;
 }
 
 export class CommonInfrastructure extends Stack {
@@ -44,7 +48,8 @@ export class CommonInfrastructure extends Stack {
     this.stage = props.stage;
     this.region = props.env.region ?? 'us-east-1';
     this.shardId = props.shardId;
-    this.createVPCAndSG();
+    const transitGatewayId = props.transitGatewayId ?? process.env.TRANSIT_GATEWAY_ID;
+    this.createVPCAndSG(transitGatewayId);
     this.createKeys();
     this.createS3Buckets(props.env.account ?? '');
     this.createVPCEndpoints();
@@ -66,7 +71,7 @@ export class CommonInfrastructure extends Stack {
     });
   }
 
-  private createVPCAndSG() {
+  private createVPCAndSG(transitGatewayId?: string) {
     this.fleetVpc = new Vpc(this, `Shard-${this.shardId}-Vpc`, {
       maxAzs: 99,
       subnetConfiguration: [
@@ -141,6 +146,29 @@ export class CommonInfrastructure extends Stack {
       Port.tcp(NETWORK_CONFIG.HTTP_PORT),
       'HTTP port will be used for patching',
     );
+
+    if (transitGatewayId) {
+      const tgwAttachment = new CfnTransitGatewayAttachment(this, `TgwAttachment-${this.shardId}`, {
+        transitGatewayId,
+        vpcId: this.fleetVpc.vpcId,
+        subnetIds: this.fleetVpc.privateSubnets.map((subnet) => subnet.subnetId),
+      });
+
+      this.fleetVpc.privateSubnets.forEach((subnet, index) => {
+        const routeTableId = (subnet as Subnet).routeTable.routeTableId;
+        new CfnRoute(this, `TgwRoute-${index}`, {
+          routeTableId,
+          destinationCidrBlock: '0.0.0.0/0',
+          transitGatewayId,
+        }).node.addDependency(tgwAttachment);
+      });
+
+      new CfnOutput(this, 'TransitGatewayAttachmentId', {
+        value: tgwAttachment.attrId,
+        exportName: 'TransitGatewayAttachmentId',
+        description: 'The ID of the Transit Gateway attachment',
+      });
+    }
   }
 
   private createS3Buckets(serviceAccount: string): void {
